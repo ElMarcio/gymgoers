@@ -3,14 +3,17 @@
         <a href="{% url 'pages:home' %}" class="text-xl font-bold hover:text-slate-200">
             GymGoers
         </a>
-        <div class="space-x-4 text-sm">
+        <div class="space-x-4 text-sm flex items-center">
             {% if user.is_authenticated %}
                 <span class="text-slate-300">Olá, {{ user.username }}</span>
                 <a href="#" class="hover:text-slate-200">Treinos</a>
-                <a href="#" class="hover:text-slate-200">Sair</a>
+                <form method="post" action="{% url 'logout' %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="hover:text-slate-200 cursor-pointer">Sair</button>
+                </form>
             {% else %}
-                <a href="#" class="hover:text-slate-200">Entrar</a>
-                <a href="#" class="px-3 py-1 bg-indigo-600 rounded hover:bg-indigo-700">Registar</a>
+                <a href="{% url 'login' %}" class="hover:text-slate-200">Entrar</a>
+                <a href="{% url 'accounts:signup' %}" class="px-3 py-1 bg-indigo-600 rounded hover:bg-indigo-700">Registar</a>
             {% endif %}
         </div>
     </div>

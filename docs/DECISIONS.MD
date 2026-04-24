@@ -226,3 +226,24 @@ New app `pages`.
 
 - Any future static-content page (about, privacy, terms) has an obvious home.
 - Homepage URL lives at `pages.urls` under namespace `pages`, accessed in templates as `{% url 'pages:home' %}`.
+
+---
+
+## ADR-009: Auth module — pragmatic Django stack + known gotchas
+
+**Date:** 2026-04-24
+**Status:** Accepted
+
+### Context
+
+Implementing the authentication module (registration, login, logout, password reset) on top of the custom `User` model from ADR-002. Three specific technical decisions were made.
+
+### Decisions
+
+**1. Email backend: console in development**
+
+`EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'` — password reset emails are printed to the `runserver` terminal instead of sent via SMTP. No external credentials or services needed in dev. Production would switch to an SMTP backend (e.g. SendGrid, AWS SES) via environment variable.
+
+**2. Custom `UserCreationForm` required for signup**
+
+Django's built-in `django.contrib.auth.forms.UserCreationForm` is hardcoded to `auth.User` and breaks when `AUTH_USER_MODEL` is customized. Subclassed it in `accounts/forms.py`
