@@ -96,8 +96,20 @@ gymgoers/
    python manage.py migrate
    python manage.py createsuperuser
 ```
+7. **Install and build Tailwind CSS:**
 
-7. **Run the development server:**
+```bash
+   python manage.py tailwind install
+   python manage.py tailwind build
+```
+
+   For development with auto-reload, run in a separate terminal:
+
+```bash
+   python manage.py tailwind start
+```
+
+8. **Run the development server:**
 
 ```bash
    python manage.py runserver
@@ -105,7 +117,6 @@ gymgoers/
 
    Visit `http://127.0.0.1:8000/`. Admin is at `/admin/`.
 
----
 
 ## Development workflow
 
