@@ -146,3 +146,83 @@ Copy.
 - Slight duplication of data.
 - Historical integrity of logged workouts is guaranteed.
 - Routine changes only affect future sessions started from that routine.
+
+## ADR-006: Tailwind CSS v4 Standalone (no Node.js)
+
+**Date:** 2026-04-24
+**Status:** Accepted
+
+### Context
+
+Styling the frontend requires a CSS framework. Tailwind was the original team choice. The `django-tailwind` package offers three integration templates: Tailwind v4 Standalone (Go binary, no Node), Tailwind v4 Full (requires Node + npm), and Tailwind v3 Full (legacy).
+
+### Decision
+
+Tailwind v4 Standalone.
+
+### Rationale
+
+- Zero Node.js dependency at runtime — fewer moving parts and fewer ways for Windows setup to break between sessions.
+- Node is still installed locally for future needs, but not required for Tailwind compilation.
+- Plugin ecosystem (typography, forms) not expected to be needed for a gym-tracking MVP. If later required, migrating to the Full template is a mechanical switch.
+- The solo-developer context rewards simplicity over flexibility.
+
+### Consequences
+
+- `python manage.py tailwind install` downloads a `tailwindcss-windows-x64.exe` inside the venv (excluded from Git).
+- `python manage.py tailwind start` is the dev watcher. `tailwind build` compiles once (used before deploy or for static check).
+- Compiled CSS at `theme/static/css/dist/styles.css` is a build artifact and excluded from version control.
+
+---
+
+## ADR-007: HTMX + Alpine.js via CDN, not npm
+
+**Date:** 2026-04-24
+**Status:** Accepted
+
+### Context
+
+The stack includes HTMX (for partial page updates driven by the server) and Alpine.js (for small client-side interactivity). Both can be installed via npm or loaded via CDN.
+
+### Decision
+
+CDN, loaded in `base.html`:
+- HTMX: `https://unpkg.com/htmx.org@2.0.3`
+- Alpine: `https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js`
+
+### Rationale
+
+- Both libraries are small (~10-15 KB each minified) and designed to work as drop-in `<script>` tags.
+- Avoiding an npm build step keeps the project simpler, consistent with ADR-006 (Standalone Tailwind).
+- Versions are pinned in the URLs, providing reproducible builds without a lockfile.
+
+### Consequences
+
+- First page load requires external CDN access. Acceptable in development; would need reconsideration for offline or air-gapped deployment.
+- Updating HTMX/Alpine means editing `base.html`, not a package file. Acceptable given infrequent updates.
+
+---
+
+## ADR-008: Dedicated `pages` app for institutional pages
+
+**Date:** 2026-04-24
+**Status:** Accepted
+
+### Context
+
+The homepage, about page, and other institutional (non-domain-specific) views need a home. Options: put them in `config/`, reuse another app, or create a new one.
+
+### Decision
+
+New app `pages`.
+
+### Rationale
+
+- Keeps domain apps (`accounts`, `workouts`, etc.) focused on their bounded context.
+- `config/` is for project-level configuration, not business logic.
+- Low cost: a Django app is a folder with six tiny files.
+
+### Consequences
+
+- Any future static-content page (about, privacy, terms) has an obvious home.
+- Homepage URL lives at `pages.urls` under namespace `pages`, accessed in templates as `{% url 'pages:home' %}`.

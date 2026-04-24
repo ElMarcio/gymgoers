@@ -128,7 +128,7 @@ gymgoers/
 
 ## Documentation
 
-- [`docs/DECISIONS.md`](docs/DECISIONS.md) — architectural and technical decisions with rationale.
+- [`DECISIONS.md`](DECISIONS.md) — architectural and technical decisions with rationale.
 
 ---
 
