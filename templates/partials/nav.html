@@ -1,0 +1,17 @@
+<nav class="bg-slate-800 text-white shadow">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+        <a href="{% url 'pages:home' %}" class="text-xl font-bold hover:text-slate-200">
+            GymGoers
+        </a>
+        <div class="space-x-4 text-sm">
+            {% if user.is_authenticated %}
+                <span class="text-slate-300">Olá, {{ user.username }}</span>
+                <a href="#" class="hover:text-slate-200">Treinos</a>
+                <a href="#" class="hover:text-slate-200">Sair</a>
+            {% else %}
+                <a href="#" class="hover:text-slate-200">Entrar</a>
+                <a href="#" class="px-3 py-1 bg-indigo-600 rounded hover:bg-indigo-700">Registar</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
