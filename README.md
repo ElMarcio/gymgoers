@@ -18,6 +18,7 @@ Social gym tracking webapp inspired by [Hevy](https://www.hevyapp.com/). Track y
 
 ## Project structure
 
+```
 gymgoers/
 ├── config/              # Django settings, root URLs, WSGI/ASGI
 ├── accounts/            # Custom User model + Profile + auth views
@@ -29,7 +30,7 @@ gymgoers/
 ├── manage.py
 ├── requirements.txt
 └── .env.example         # Template for required env vars
-
+```
 ---
 
 ## Local setup
@@ -128,7 +129,7 @@ gymgoers/
 
 ## Documentation
 
-- [`DECISIONS.md`](DECISIONS.md) — architectural and technical decisions with rationale.
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — architectural and technical decisions with rationale.
 
 ---
 
