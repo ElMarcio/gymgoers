@@ -1,0 +1,31 @@
+<div class="bg-white p-4 rounded-lg shadow" id="we-block-{{ we.pk }}">
+    <h3 class="font-semibold text-slate-800 mb-2">
+        {{ we.exercise.name }}
+    </h3>
+
+    <table class="w-full text-sm">
+        <thead class="text-slate-500 text-left">
+            <tr>
+                <th class="py-1 w-10">#</th>
+                <th class="py-1">Reps</th>
+                <th class="py-1">Peso (kg)</th>
+                <th class="py-1">Estado</th>
+                <th class="py-1 w-10"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for set in we.sets.all %}
+                {% include "workouts/_set_row.html" with set=set we=we workout=workout %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <button type="button"
+            hx-post="{% url 'workouts:set_create' we.pk %}"
+            hx-target="#we-block-{{ we.pk }}"
+            hx-swap="outerHTML"
+            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+            class="mt-3 px-3 py-1 text-sm border border-dashed border-slate-300 text-slate-600 rounded hover:border-indigo-400 hover:text-indigo-600 transition">
+        + Set
+    </button>
+</div>

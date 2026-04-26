@@ -54,12 +54,47 @@ class Workout(models.Model):
     def is_finished(self):
         return self.status == self.Status.FINISHED
 
+    def has_logged_sets(self):
+        """True if at least one completed set with reps>0 exists across all exercises."""
+        from .models import Set  # local import to avoid forward-reference issues
+        return Set.objects.filter(
+            workout_exercise__workout=self,
+            completed=True,
+            reps__gt=0,
+        ).exists()
+
+    def cleanup_empty_data(self):
+        """
+        Remove sets with reps=0 and WorkoutExercises that end up with zero sets.
+        Called as part of finish() to keep history clean.
+        """
+        from .models import Set  # local import
+        Set.objects.filter(
+            workout_exercise__workout=self,
+            reps=0,
+        ).delete()
+        self.workout_exercises.filter(sets__isnull=True).delete()
+
     def finish(self):
-        """Mark workout as finished. Idempotent."""
-        if not self.is_finished:
-            self.status = self.Status.FINISHED
-            self.finished_at = timezone.now()
-            self.save(update_fields=['status', 'finished_at'])
+        """
+        Mark workout as finished. Cleans up empty sets/exercises first.
+        Raises ValueError if there's nothing meaningful to record.
+        Idempotent (calling on a finished workout is a no-op).
+        """
+        if self.is_finished:
+            return
+
+        self.cleanup_empty_data()
+
+        if not self.has_logged_sets():
+            raise ValueError(
+                "Não é possível terminar um treino sem sets registados. "
+                "Adiciona pelo menos um set com repetições > 0."
+            )
+
+        self.status = self.Status.FINISHED
+        self.finished_at = timezone.now()
+        self.save(update_fields=['status', 'finished_at'])
 
 
 class WorkoutExercise(models.Model):

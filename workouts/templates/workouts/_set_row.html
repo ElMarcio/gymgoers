@@ -1,0 +1,68 @@
+<tr class="border-t border-slate-100" id="set-row-{{ set.pk }}">
+    <td class="py-2 w-10">{{ set.order }}</td>
+
+    <td class="py-2">
+        <form hx-post="{% url 'workouts:set_update' set.pk %}"
+              hx-target="#set-row-{{ set.pk }}"
+              hx-swap="outerHTML"
+              hx-trigger="change">
+            {% csrf_token %}
+            <input type="hidden" name="weight_kg" value="{{ set.weight_kg }}">
+            <input type="hidden" name="is_warmup" value="{% if set.is_warmup %}on{% endif %}">
+            <input type="hidden" name="completed" value="{% if set.completed %}on{% endif %}">
+            <input type="number" name="reps" value="{{ set.reps }}" min="0"
+                   class="w-20 px-2 py-1 border border-slate-200 rounded focus:border-indigo-500 focus:outline-none">
+        </form>
+    </td>
+
+    <td class="py-2">
+        <form hx-post="{% url 'workouts:set_update' set.pk %}"
+              hx-target="#set-row-{{ set.pk }}"
+              hx-swap="outerHTML"
+              hx-trigger="change">
+            {% csrf_token %}
+            <input type="hidden" name="reps" value="{{ set.reps }}">
+            <input type="hidden" name="is_warmup" value="{% if set.is_warmup %}on{% endif %}">
+            <input type="hidden" name="completed" value="{% if set.completed %}on{% endif %}">
+            <input type="number" name="weight_kg" value="{{ set.weight_kg }}" step="0.5" min="0"
+                   class="w-24 px-2 py-1 border border-slate-200 rounded focus:border-indigo-500 focus:outline-none">
+        </form>
+    </td>
+
+    <td class="py-2 text-xs">
+        <form hx-post="{% url 'workouts:set_update' set.pk %}"
+              hx-target="#set-row-{{ set.pk }}"
+              hx-swap="outerHTML"
+              hx-trigger="change"
+              class="flex gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="reps" value="{{ set.reps }}">
+            <input type="hidden" name="weight_kg" value="{{ set.weight_kg }}">
+
+            <label class="flex items-center gap-1 cursor-pointer text-amber-600">
+                <input type="checkbox" name="is_warmup" {% if set.is_warmup %}checked{% endif %}
+                       class="rounded">
+                <span>Aquec.</span>
+            </label>
+
+            <label class="flex items-center gap-1 cursor-pointer {% if set.completed %}text-green-600{% else %}text-slate-400{% endif %}">
+                <input type="checkbox" name="completed" {% if set.completed %}checked{% endif %}
+                       class="rounded">
+                <span>{% if set.completed %}Feito{% else %}Pendente{% endif %}</span>
+            </label>
+        </form>
+    </td>
+  <td>
+    <td class="py-2 w-10">
+        <button type="button"
+                hx-post="{% url 'workouts:set_delete' set.pk %}"
+                hx-target="#we-block-{{ we.pk }}"
+                hx-swap="outerHTML"
+                hx-confirm="Apagar este set?"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                class="text-slate-400 hover:text-red-600 transition text-lg leading-none"
+                title="Apagar set">
+            ×
+        </button>
+    </td>
+</tr>

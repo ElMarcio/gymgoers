@@ -33,6 +33,13 @@ gymgoers/
 ```
 ---
 
+## Features
+
+- **Authentication** (signup, login, logout, password reset via console email in dev)
+- **Exercise catalogue** — 50 curated exercises across 7 muscle groups, with HTMX-driven live search and filtering
+- **Workout tracking** — create workouts, add exercises from the catalogue, log sets with reps and weight, edit inline without page reloads, mark sets as warmup or completed, finish workouts (with automatic cleanup of empty data)
+- **Workout history** — browse past finished workouts in read-only mode
+
 ## Local setup
 
 ### Prerequisites

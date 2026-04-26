@@ -318,3 +318,68 @@ HTMX. The `ExerciseListView` overrides `get_template_names()` to return `_exerci
 - Pesquisa-as-you-type with 300ms debounce feels instant without any client-side state.
 - Trade-off: any view that needs HTMX-driven updates must also implement the dual-template pattern. Acceptable boilerplate.
 - If we ever build a mobile app (ADR-001 leaves it as "vague possibility"), these views need wrapping with DRF — non-trivial but not blocked by this decision.
+
+---
+
+## ADR-012: Workout state machine — in_progress → finished
+
+**Date:** 2026-04-26
+**Status:** Accepted
+
+### Context
+
+Workouts have two distinct phases: while being logged (mutable, lots of edits) and after the user is done (immutable historical record). The system needs to enforce this invariant: finished workouts cannot be modified, even by their owner.
+
+### Decision
+
+`Workout.status` field with two values: `in_progress` and `finished`. Transition is one-way: in_progress → finished. There is no "reopen finished workout" flow.
+
+Every mutation view (set update, set create, set delete, add exercise, update meta) checks `workout.is_in_progress` and returns 403 if not. UI templates conditionally render edit affordances only when `is_in_progress`.
+
+`Workout.finish()` runs cleanup before transitioning: deletes sets with `reps=0` and orphaned WorkoutExercises (those with no remaining sets). Raises `ValueError` if cleanup leaves the workout with zero meaningful sets — preventing empty workouts from being marked as finished.
+
+### Rationale
+
+- **One-way transition** keeps the model simple. Reopening a workout to edit retroactively undermines the integrity of the history. Out of scope for MVP.
+- **Cleanup on finish** prevents pollution of the history with placeholder data (empty sets pre-created when adding an exercise; see ADR-004 implementation note).
+- **Validation that something was actually logged** prevents edge cases where the user clicks "Finish" on a fresh workout by mistake.
+- **Defense at multiple layers**: model method validates, view catches the exception and surfaces via flash messages, template hides edit affordances on finished workouts.
+
+### Consequences
+
+- Users cannot edit history. If they realize a workout was logged with wrong data, the workaround is "delete and re-create" (which is destructive). Acceptable for MVP.
+- The "no reopen" rule may be relaxed in future versions if user feedback demands it.
+
+---
+
+## ADR-013: HTMX inline-edit pattern with server-rendered fragments
+
+**Date:** 2026-04-26
+**Status:** Accepted
+
+### Context
+
+The workout-in-progress page is heavily interactive: each set has 4 editable fields (reps, weight, is_warmup, completed), users add and remove sets, edit workout title and notes, all without leaving the page.
+
+Two viable approaches:
+
+1. **Client-side state (JS framework):** load the workout once, manage state in React/Alpine, sync to backend via JSON API.
+2. **HTMX with server-rendered fragments:** every interaction is a small HTTP request that returns a HTML snippet replacing part of the DOM.
+
+### Decision
+
+Approach 2 (HTMX). Each interactive component (set row, workout exercise block, workout meta) has a corresponding fragment template (`_set_row.html`, `_workout_exercise_block.html`, `_workout_meta.html`) and a small view that returns it.
+
+### Rationale
+
+- **No JSON API surface needed.** Same Django views, just rendering smaller templates conditionally. Reuses existing form validation (ModelForm).
+- **Lower complexity** than maintaining client state synchronized with server state.
+- **Progressive enhancement preserved:** if HTMX fails to load, regular form submissions would still work (with full page reloads). Forms have proper `<form>` semantics.
+- **Validation is server-side only** — ModelForm rules apply on every save, no duplication.
+
+### Consequences
+
+- Many small endpoints (one per editable component). Discoverable in `urls.py`.
+- Fragment templates with leading underscore (`_set_row.html`) signal partial-only by convention.
+- View dispatch checks `request.headers.get('HX-Request')` only when the URL serves both full page and fragment (the exercise list view in Phase 6 does this; workout fragments are dedicated endpoints, no detection needed).
+- Trade-off: each interaction is a round-trip. Not a problem on local dev or low-latency hosting; could feel sluggish on slow connections. Future optimization: optimistic UI with `hx-swap="outerHTML transition:true"` plus rollback on error.

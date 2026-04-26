@@ -26,5 +26,11 @@ class WorkoutAdmin(admin.ModelAdmin):
 
 @admin.register(Set)
 class SetAdmin(admin.ModelAdmin):
-    list_display = ('workout_exercise', 'order', 'reps', 'weight_kg', 'is_warmup', 'completed')
-    list_filter = ('is_warmup', 'completed')
+    list_display = ('workout_id', 'workout_exercise', 'order', 'reps', 'weight_kg', 'is_warmup', 'completed')
+    list_filter = ('is_warmup', 'completed', 'workout_exercise__workout__user')
+    list_select_related = ('workout_exercise__workout',)
+    ordering = ('workout_exercise__workout', 'workout_exercise', 'order')
+
+    @admin.display(description='Workout', ordering='workout_exercise__workout')
+    def workout_id(self, obj):
+        return f'#{obj.workout_exercise.workout_id}'
