@@ -118,6 +118,10 @@ Relational. `Set` is a model.
 - Slightly more tables and queries.
 - Any analytics / charting feature in the future is drastically simpler.
 
+
+### Implementation note (2026-04-26)
+
+ - When adding an exercise to a workout via the public UI (Phase 7, Block 3), the system will auto-create 3 empty sets by default (reps=0, weight_kg=0). Users typically perform 3-5 sets per exercise; pre-populating reduces clicks. The admin interface keeps the manual workflow because admin is for power users / debug.
 ---
 
 ## ADR-005: Routines are *copied* into Workouts, not referenced

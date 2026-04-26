@@ -7,7 +7,7 @@
             <a href="{% url 'exercises:list' %}" class="hover:text-slate-200">Exercícios</a>
             {% if user.is_authenticated %}
                 <span class="text-slate-300">Olá, {{ user.username }}</span>
-                <a href="#" class="hover:text-slate-200">Treinos</a>
+                <a href="{% url 'workouts:list' %}" class="hover:text-slate-200">Treinos</a>
                 <form method="post" action="{% url 'logout' %}" class="inline">
                     {% csrf_token %}
                     <button type="submit" class="hover:text-slate-200 cursor-pointer">Sair</button>

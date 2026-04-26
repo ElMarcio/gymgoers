@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}{{ workout.title|default:"Treino" }} — GymGoers{% endblock %}
+
+{% block content %}
+<a href="{% url 'workouts:list' %}" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">
+    &larr; Voltar aos meus treinos
+</a>
+
+<header class="bg-white p-6 rounded-lg shadow mb-6">
+    <div class="flex justify-between items-start mb-2">
+        <h1 class="text-2xl font-bold text-slate-800">
+            {{ workout.title|default:"Treino sem título" }}
+        </h1>
+        {% if workout.is_in_progress %}
+            <span class="px-2 py-1 bg-amber-100 text-amber-800 text-sm rounded">Em curso</span>
+        {% else %}
+            <span class="px-2 py-1 bg-green-100 text-green-800 text-sm rounded">Terminado</span>
+        {% endif %}
+    </div>
+
+    <p class="text-sm text-slate-500">
+        Iniciado a {{ workout.started_at|date:"d M Y, H:i" }}
+        {% if workout.finished_at %}
+            &middot; Terminado a {{ workout.finished_at|date:"d M Y, H:i" }}
+        {% endif %}
+    </p>
+
+    {% if workout.notes %}
+        <p class="mt-4 text-slate-700">{{ workout.notes }}</p>
+    {% endif %}
+</header>
+
+<section>
+    <h2 class="text-lg font-semibold text-slate-800 mb-3">Exercícios</h2>
+
+    {% if workout.workout_exercises.all %}
+        <div class="space-y-4">
+            {% for we in workout.workout_exercises.all %}
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-semibold text-slate-800 mb-2">
+                        {{ we.exercise.name }}
+                    </h3>
+                    {% if we.sets.all %}
+                        <table class="w-full text-sm">
+                            <thead class="text-slate-500 text-left">
+                                <tr>
+                                    <th class="py-1 w-10">#</th>
+                                    <th class="py-1">Reps</th>
+                                    <th class="py-1">Peso (kg)</th>
+                                    <th class="py-1 w-20">Tipo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for set in we.sets.all %}
+                                    <tr class="border-t border-slate-100">
+                                        <td class="py-2">{{ set.order }}</td>
+                                        <td class="py-2">{{ set.reps }}</td>
+                                        <td class="py-2">{{ set.weight_kg }}</td>
+                                        <td class="py-2 text-xs">
+                                            {% if set.is_warmup %}
+                                                <span class="text-amber-600">Aquec.</span>
+                                            {% elif not set.completed %}
+                                                <span class="text-slate-400">Skipado</span>
+                                            {% else %}
+                                                <span class="text-green-600">✓</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-sm text-slate-500 italic">Sem sets registados.</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white p-8 rounded-lg shadow text-center">
+            <p class="text-slate-500 mb-2">Ainda não há exercícios neste treino.</p>
+            {% if workout.is_in_progress %}
+                <p class="text-sm text-slate-400">A funcionalidade de adicionar exercícios chega no próximo bloco.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
