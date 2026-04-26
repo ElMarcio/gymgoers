@@ -4,6 +4,7 @@
             GymGoers
         </a>
         <div class="space-x-4 text-sm flex items-center">
+            <a href="{% url 'exercises:list' %}" class="hover:text-slate-200">Exercícios</a>
             {% if user.is_authenticated %}
                 <span class="text-slate-300">Olá, {{ user.username }}</span>
                 <a href="#" class="hover:text-slate-200">Treinos</a>

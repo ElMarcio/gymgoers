@@ -22,5 +22,6 @@ urlpatterns = [
     path('', include('pages.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/', include('accounts.urls')),
+    path('exercises/', include('exercises.urls')),
     path('__reload__/', include('django_browser_reload.urls')),
 ]

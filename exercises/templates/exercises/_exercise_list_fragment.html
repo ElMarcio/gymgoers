@@ -1,0 +1,35 @@
+{% if exercises %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for exercise in exercises %}
+            <a href="{{ exercise.get_absolute_url }}"
+               class="block bg-white p-4 rounded-lg shadow hover:shadow-md transition border border-transparent hover:border-indigo-300">
+                <h3 class="font-semibold text-slate-800 mb-1">{{ exercise.name }}</h3>
+                <div class="flex gap-2 text-xs">
+                    <span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">{{ exercise.get_muscle_group_display }}</span>
+                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded">{{ exercise.get_equipment_display }}</span>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+        <nav class="flex justify-center gap-2 mt-6">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_muscle_group %}&muscle_group={{ selected_muscle_group }}{% endif %}"
+                   class="px-3 py-1 border border-slate-300 rounded hover:bg-slate-100">Anterior</a>
+            {% endif %}
+            <span class="px-3 py-1 text-slate-600">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_muscle_group %}&muscle_group={{ selected_muscle_group }}{% endif %}"
+                   class="px-3 py-1 border border-slate-300 rounded hover:bg-slate-100">Seguinte</a>
+            {% endif %}
+        </nav>
+    {% endif %}
+{% else %}
+    <div class="text-center py-12 text-slate-500">
+        <p class="mb-2">Nenhum exercício encontrado.</p>
+        {% if query or selected_muscle_group %}
+            <a href="{% url 'exercises:list' %}" class="text-indigo-600 hover:underline">Limpar filtros</a>
+        {% endif %}
+    </div>
+{% endif %}

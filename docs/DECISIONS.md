@@ -247,3 +247,70 @@ Implementing the authentication module (registration, login, logout, password re
 **2. Custom `UserCreationForm` required for signup**
 
 Django's built-in `django.contrib.auth.forms.UserCreationForm` is hardcoded to `auth.User` and breaks when `AUTH_USER_MODEL` is customized. Subclassed it in `accounts/forms.py`
+
+---
+
+## ADR-010: Exercise catalogue — curated data via Django fixture
+
+**Date:** 2026-04-26
+**Status:** Accepted
+
+### Context
+
+The workout tracking module (Phase 7) requires users to select exercises when logging sets. Without a pre-populated catalogue, the app is unusable on first launch. Three approaches were considered:
+
+1. **User-generated:** users create their own exercises ad-hoc when logging workouts.
+2. **Data migration:** ship exercises as part of a Django migration.
+3. **JSON fixture loaded via `loaddata`:** curated list, kept versioned alongside code.
+
+### Decision
+
+JSON fixture in `exercises/fixtures/exercises_seed.json`. 50 exercises covering the seven defined muscle groups (chest, back, legs, shoulders, arms, core, full body) with realistic equipment distribution.
+
+### Rationale
+
+- **User-generated rejected for MVP:** explodes the surface area (validation, deduplication, moderation, UI for creation, soft-delete on misuse). All deferrable.
+- **Data migration rejected:** infrastructural seed (e.g. permission groups) belongs in migrations; domain data does not. Migrations are difficult to edit/extend; fixtures are JSON anyone can update.
+- **Fixture pros:** versioned in Git, easily extended, idempotent via `loaddata`, well-known Django convention.
+
+### Consequences
+
+- Catalogue is curated and consistent.
+- Adding new exercises is a one-line edit in the JSON + `python manage.py loaddata`.
+- If "user-submitted exercises" becomes a future requirement, the model needs `created_by` (FK to User), `is_approved` flag, and admin moderation. Mechanical addition; nothing in current schema blocks it.
+
+### Implementation note
+
+The `Exercise.created_at` field originally used `auto_now_add=True`, which silently fails during `loaddata` (the auto-fill mechanism is bypassed by fixtures, leaving the column null and triggering a `NotNullViolation`). Changed to `default=timezone.now` for compatibility with both ORM and fixtures. This is a documented Django gotcha worth remembering for any seedable model.
+
+---
+
+## ADR-011: HTMX-driven dual-template views (full page vs fragment)
+
+**Date:** 2026-04-26
+**Status:** Accepted
+
+### Context
+
+The exercise catalogue supports live search and filtering. Two implementation approaches:
+
+1. **Full page reload on every keystroke/filter change:** simple, but UX is poor (loses scroll position, flickers, slow).
+2. **Client-side JavaScript framework:** React/Vue + JSON API. Requires API layer, frontend build, state management.
+3. **HTMX:** server returns HTML fragments on demand; HTMX swaps them into the DOM.
+
+### Decision
+
+HTMX. The `ExerciseListView` overrides `get_template_names()` to return `_exercise_list_fragment.html` for requests with the `HX-Request` header, and the full `exercise_list.html` otherwise. Same URL, same view, two output modes.
+
+### Rationale
+
+- **Stays consistent with the project's HTMX-first stance** (declared at project inception, before solo run).
+- **No API surface needed.** The fragment template is just the part of the page that changes; the wrapper template includes it on full page loads.
+- **`hx-push-url="true"`** keeps the URL in sync with filter state — refresh-friendly, shareable links, browser back/forward works.
+- **Underscore prefix** on the fragment template (`_exercise_list_fragment.html`) is convention to flag it as a partial that should not be rendered standalone.
+
+### Consequences
+
+- Pesquisa-as-you-type with 300ms debounce feels instant without any client-side state.
+- Trade-off: any view that needs HTMX-driven updates must also implement the dual-template pattern. Acceptable boilerplate.
+- If we ever build a mobile app (ADR-001 leaves it as "vague possibility"), these views need wrapping with DRF — non-trivial but not blocked by this decision.

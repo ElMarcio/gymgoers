@@ -97,7 +97,14 @@ gymgoers/
    python manage.py migrate
    python manage.py createsuperuser
 ```
-7. **Install and build Tailwind CSS:**
+
+7. **Load seed data (exercise catalogue):**
+
+```bash
+   python manage.py loaddata exercises/fixtures/exercises_seed.json
+```
+
+8**Install and build Tailwind CSS:**
 
 ```bash
    python manage.py tailwind install
@@ -110,7 +117,7 @@ gymgoers/
    python manage.py tailwind start
 ```
 
-8. **Run the development server:**
+9**Run the development server:**
 
 ```bash
    python manage.py runserver
