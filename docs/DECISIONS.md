@@ -118,6 +118,10 @@ Relational. `Set` is a model.
 - Slightly more tables and queries.
 - Any analytics / charting feature in the future is drastically simpler.
 
+
+### Implementation note (2026-04-26)
+
+ - When adding an exercise to a workout via the public UI (Phase 7, Block 3), the system will auto-create 3 empty sets by default (reps=0, weight_kg=0). Users typically perform 3-5 sets per exercise; pre-populating reduces clicks. The admin interface keeps the manual workflow because admin is for power users / debug.
 ---
 
 ## ADR-005: Routines are *copied* into Workouts, not referenced
@@ -247,3 +251,135 @@ Implementing the authentication module (registration, login, logout, password re
 **2. Custom `UserCreationForm` required for signup**
 
 Django's built-in `django.contrib.auth.forms.UserCreationForm` is hardcoded to `auth.User` and breaks when `AUTH_USER_MODEL` is customized. Subclassed it in `accounts/forms.py`
+
+---
+
+## ADR-010: Exercise catalogue — curated data via Django fixture
+
+**Date:** 2026-04-26
+**Status:** Accepted
+
+### Context
+
+The workout tracking module (Phase 7) requires users to select exercises when logging sets. Without a pre-populated catalogue, the app is unusable on first launch. Three approaches were considered:
+
+1. **User-generated:** users create their own exercises ad-hoc when logging workouts.
+2. **Data migration:** ship exercises as part of a Django migration.
+3. **JSON fixture loaded via `loaddata`:** curated list, kept versioned alongside code.
+
+### Decision
+
+JSON fixture in `exercises/fixtures/exercises_seed.json`. 50 exercises covering the seven defined muscle groups (chest, back, legs, shoulders, arms, core, full body) with realistic equipment distribution.
+
+### Rationale
+
+- **User-generated rejected for MVP:** explodes the surface area (validation, deduplication, moderation, UI for creation, soft-delete on misuse). All deferrable.
+- **Data migration rejected:** infrastructural seed (e.g. permission groups) belongs in migrations; domain data does not. Migrations are difficult to edit/extend; fixtures are JSON anyone can update.
+- **Fixture pros:** versioned in Git, easily extended, idempotent via `loaddata`, well-known Django convention.
+
+### Consequences
+
+- Catalogue is curated and consistent.
+- Adding new exercises is a one-line edit in the JSON + `python manage.py loaddata`.
+- If "user-submitted exercises" becomes a future requirement, the model needs `created_by` (FK to User), `is_approved` flag, and admin moderation. Mechanical addition; nothing in current schema blocks it.
+
+### Implementation note
+
+The `Exercise.created_at` field originally used `auto_now_add=True`, which silently fails during `loaddata` (the auto-fill mechanism is bypassed by fixtures, leaving the column null and triggering a `NotNullViolation`). Changed to `default=timezone.now` for compatibility with both ORM and fixtures. This is a documented Django gotcha worth remembering for any seedable model.
+
+---
+
+## ADR-011: HTMX-driven dual-template views (full page vs fragment)
+
+**Date:** 2026-04-26
+**Status:** Accepted
+
+### Context
+
+The exercise catalogue supports live search and filtering. Two implementation approaches:
+
+1. **Full page reload on every keystroke/filter change:** simple, but UX is poor (loses scroll position, flickers, slow).
+2. **Client-side JavaScript framework:** React/Vue + JSON API. Requires API layer, frontend build, state management.
+3. **HTMX:** server returns HTML fragments on demand; HTMX swaps them into the DOM.
+
+### Decision
+
+HTMX. The `ExerciseListView` overrides `get_template_names()` to return `_exercise_list_fragment.html` for requests with the `HX-Request` header, and the full `exercise_list.html` otherwise. Same URL, same view, two output modes.
+
+### Rationale
+
+- **Stays consistent with the project's HTMX-first stance** (declared at project inception, before solo run).
+- **No API surface needed.** The fragment template is just the part of the page that changes; the wrapper template includes it on full page loads.
+- **`hx-push-url="true"`** keeps the URL in sync with filter state — refresh-friendly, shareable links, browser back/forward works.
+- **Underscore prefix** on the fragment template (`_exercise_list_fragment.html`) is convention to flag it as a partial that should not be rendered standalone.
+
+### Consequences
+
+- Pesquisa-as-you-type with 300ms debounce feels instant without any client-side state.
+- Trade-off: any view that needs HTMX-driven updates must also implement the dual-template pattern. Acceptable boilerplate.
+- If we ever build a mobile app (ADR-001 leaves it as "vague possibility"), these views need wrapping with DRF — non-trivial but not blocked by this decision.
+
+---
+
+## ADR-012: Workout state machine — in_progress → finished
+
+**Date:** 2026-04-26
+**Status:** Accepted
+
+### Context
+
+Workouts have two distinct phases: while being logged (mutable, lots of edits) and after the user is done (immutable historical record). The system needs to enforce this invariant: finished workouts cannot be modified, even by their owner.
+
+### Decision
+
+`Workout.status` field with two values: `in_progress` and `finished`. Transition is one-way: in_progress → finished. There is no "reopen finished workout" flow.
+
+Every mutation view (set update, set create, set delete, add exercise, update meta) checks `workout.is_in_progress` and returns 403 if not. UI templates conditionally render edit affordances only when `is_in_progress`.
+
+`Workout.finish()` runs cleanup before transitioning: deletes sets with `reps=0` and orphaned WorkoutExercises (those with no remaining sets). Raises `ValueError` if cleanup leaves the workout with zero meaningful sets — preventing empty workouts from being marked as finished.
+
+### Rationale
+
+- **One-way transition** keeps the model simple. Reopening a workout to edit retroactively undermines the integrity of the history. Out of scope for MVP.
+- **Cleanup on finish** prevents pollution of the history with placeholder data (empty sets pre-created when adding an exercise; see ADR-004 implementation note).
+- **Validation that something was actually logged** prevents edge cases where the user clicks "Finish" on a fresh workout by mistake.
+- **Defense at multiple layers**: model method validates, view catches the exception and surfaces via flash messages, template hides edit affordances on finished workouts.
+
+### Consequences
+
+- Users cannot edit history. If they realize a workout was logged with wrong data, the workaround is "delete and re-create" (which is destructive). Acceptable for MVP.
+- The "no reopen" rule may be relaxed in future versions if user feedback demands it.
+
+---
+
+## ADR-013: HTMX inline-edit pattern with server-rendered fragments
+
+**Date:** 2026-04-26
+**Status:** Accepted
+
+### Context
+
+The workout-in-progress page is heavily interactive: each set has 4 editable fields (reps, weight, is_warmup, completed), users add and remove sets, edit workout title and notes, all without leaving the page.
+
+Two viable approaches:
+
+1. **Client-side state (JS framework):** load the workout once, manage state in React/Alpine, sync to backend via JSON API.
+2. **HTMX with server-rendered fragments:** every interaction is a small HTTP request that returns a HTML snippet replacing part of the DOM.
+
+### Decision
+
+Approach 2 (HTMX). Each interactive component (set row, workout exercise block, workout meta) has a corresponding fragment template (`_set_row.html`, `_workout_exercise_block.html`, `_workout_meta.html`) and a small view that returns it.
+
+### Rationale
+
+- **No JSON API surface needed.** Same Django views, just rendering smaller templates conditionally. Reuses existing form validation (ModelForm).
+- **Lower complexity** than maintaining client state synchronized with server state.
+- **Progressive enhancement preserved:** if HTMX fails to load, regular form submissions would still work (with full page reloads). Forms have proper `<form>` semantics.
+- **Validation is server-side only** — ModelForm rules apply on every save, no duplication.
+
+### Consequences
+
+- Many small endpoints (one per editable component). Discoverable in `urls.py`.
+- Fragment templates with leading underscore (`_set_row.html`) signal partial-only by convention.
+- View dispatch checks `request.headers.get('HX-Request')` only when the URL serves both full page and fragment (the exercise list view in Phase 6 does this; workout fragments are dedicated endpoints, no detection needed).
+- Trade-off: each interaction is a round-trip. Not a problem on local dev or low-latency hosting; could feel sluggish on slow connections. Future optimization: optimistic UI with `hx-swap="outerHTML transition:true"` plus rollback on error.

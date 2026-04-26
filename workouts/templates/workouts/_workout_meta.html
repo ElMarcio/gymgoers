@@ -1,0 +1,30 @@
+<div id="workout-meta">
+    {% if workout.is_in_progress %}
+        <form hx-post="{% url 'workouts:update_meta' workout.pk %}"
+              hx-target="#workout-meta"
+              hx-swap="outerHTML"
+              hx-trigger="change">
+            {% csrf_token %}
+            <input type="text" name="title" value="{{ workout.title }}"
+                   placeholder="Título do treino..."
+                   maxlength="100"
+                   class="text-2xl font-bold text-slate-800 w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none transition">
+        </form>
+        <form hx-post="{% url 'workouts:update_meta' workout.pk %}"
+              hx-target="#workout-meta"
+              hx-swap="outerHTML"
+              hx-trigger="change">
+            {% csrf_token %}
+            <textarea name="notes" rows="2"
+                      placeholder="Notas (opcional)..."
+                      class="mt-2 w-full text-sm text-slate-700 bg-transparent border border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none rounded p-1 transition resize-none">{{ workout.notes }}</textarea>
+        </form>
+    {% else %}
+        <h1 class="text-2xl font-bold text-slate-800">
+            {{ workout.title|default:"Treino sem título" }}
+        </h1>
+        {% if workout.notes %}
+            <p class="mt-2 text-sm text-slate-700">{{ workout.notes }}</p>
+        {% endif %}
+    {% endif %}
+</div>

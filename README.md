@@ -33,6 +33,13 @@ gymgoers/
 ```
 ---
 
+## Features
+
+- **Authentication** (signup, login, logout, password reset via console email in dev)
+- **Exercise catalogue** — 50 curated exercises across 7 muscle groups, with HTMX-driven live search and filtering
+- **Workout tracking** — create workouts, add exercises from the catalogue, log sets with reps and weight, edit inline without page reloads, mark sets as warmup or completed, finish workouts (with automatic cleanup of empty data)
+- **Workout history** — browse past finished workouts in read-only mode
+
 ## Local setup
 
 ### Prerequisites
@@ -97,7 +104,14 @@ gymgoers/
    python manage.py migrate
    python manage.py createsuperuser
 ```
-7. **Install and build Tailwind CSS:**
+
+7. **Load seed data (exercise catalogue):**
+
+```bash
+   python manage.py loaddata exercises/fixtures/exercises_seed.json
+```
+
+8**Install and build Tailwind CSS:**
 
 ```bash
    python manage.py tailwind install
@@ -110,7 +124,7 @@ gymgoers/
    python manage.py tailwind start
 ```
 
-8. **Run the development server:**
+9**Run the development server:**
 
 ```bash
    python manage.py runserver

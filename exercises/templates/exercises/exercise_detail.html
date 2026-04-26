@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.name }} — GymGoers{% endblock %}
+
+{% block content %}
+<a href="{% url 'exercises:list' %}" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">
+    &larr; Voltar ao catálogo
+</a>
+
+<article class="bg-white p-6 rounded-lg shadow">
+    <h1 class="text-3xl font-bold text-slate-800 mb-2">{{ exercise.name }}</h1>
+
+    <div class="flex gap-2 mb-6">
+        <span class="px-3 py-1 bg-indigo-100 text-indigo-700 text-sm rounded">{{ exercise.get_muscle_group_display }}</span>
+        <span class="px-3 py-1 bg-slate-100 text-slate-700 text-sm rounded">{{ exercise.get_equipment_display }}</span>
+    </div>
+
+    {% if exercise.description %}
+        <h2 class="text-lg font-semibold text-slate-800 mb-2">Descrição</h2>
+        <p class="text-slate-700 leading-relaxed">{{ exercise.description }}</p>
+    {% else %}
+        <p class="text-slate-500 italic">Sem descrição disponível.</p>
+    {% endif %}
+</article>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Os meus treinos — GymGoers{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-slate-800">Os meus treinos</h1>
+
+    <form method="post" action="{% url 'workouts:start' %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
+            + Iniciar treino
+        </button>
+    </form>
+</div>
+
+{% if workouts %}
+    <div class="space-y-3">
+        {% for workout in workouts %}
+            <a href="{{ workout.get_absolute_url }}"
+               class="block bg-white p-4 rounded-lg shadow hover:shadow-md transition border border-transparent hover:border-indigo-300">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-semibold text-slate-800">
+                            {{ workout.title|default:"Treino sem título" }}
+                        </h3>
+                        <p class="text-sm text-slate-500 mt-1">
+                            {{ workout.started_at|date:"d M Y, H:i" }}
+                            &middot; {{ workout.workout_exercises.count }} exercício{{ workout.workout_exercises.count|pluralize:"s" }}
+                        </p>
+                    </div>
+                    {% if workout.is_in_progress %}
+                        <span class="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">Em curso</span>
+                    {% else %}
+                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Terminado</span>
+                    {% endif %}
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+        <nav class="flex justify-center gap-2 mt-6">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}"
+                   class="px-3 py-1 border border-slate-300 rounded hover:bg-slate-100">Anterior</a>
+            {% endif %}
+            <span class="px-3 py-1 text-slate-600">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}"
+                   class="px-3 py-1 border border-slate-300 rounded hover:bg-slate-100">Seguinte</a>
+            {% endif %}
+        </nav>
+    {% endif %}
+{% else %}
+    <div class="bg-white p-12 rounded-lg shadow text-center">
+        <h2 class="text-xl font-semibold text-slate-700 mb-2">Ainda não tens treinos.</h2>
+        <p class="text-slate-500 mb-6">Carrega no botão acima para iniciares o teu primeiro!</p>
+    </div>
+{% endif %}
+{% endblock %}
